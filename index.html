@@ -27,16 +27,24 @@ class Vec3
     }
 
     // Subtract other vector from this one and return the result
-    minus(other){}
+    minus(other){
+        return new Vec3(this.x - other.x, this.y - other.y, this.z - other.z)
+    }
 
     // Multiply other vector by this one and return the result
-    multiply(other){}
+    multiply(other){
+        return new Vec3(this.x * other.x, this.y * other.y, this.z * other.z)
+    }
 
     // Scale this vector by the number scalar and return the result
-    scale(scalar){}
+    scale(scalar){
+        return new Vec3(this.x * scalar, this.y * sclalar, this.z * scalar)
+    }
     
     // Calculate the dot product of this vector with the other and return the result
-    dot(other) {}
+    dot(other) {
+
+    }
 
     // Calculate and return the magnitude of this vector
     magnitude() {}
@@ -47,6 +55,8 @@ class Vec3
     // Return a normalised version of this vector
     normalised() {}
 }
+const v1 = new Vec3(1, 2, 3);
+const v2 = new Vec3(4, 5, 6);
 
 // A sphere in 3D space. Has centre, radius and colour all of which are Vec3s
 class Sphere
