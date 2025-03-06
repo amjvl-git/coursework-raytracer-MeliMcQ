@@ -47,13 +47,22 @@ class Vec3
     }
 
     // Calculate and return the magnitude of this vector
-    magnitude() {}
+    magnitude() {
+        pythagoras =((this.x * this.x) + (this.y * this.y) + (this.z * this.z))
+        return new Vec3(Math.sqrt(pythagoras))
+    }
     
     // Calculate and return the magnitude of this vector without the square root
-    magnitudeSquared() {}
+    magnitudeSquared() {
+        pythagoras =((this.x*this.x) + (this.y * this.y) + (this.z * this.z))
+        return new Vec3(pythagoras)
+    }
 
     // Return a normalised version of this vector
-    normalised() {}
+    normalised() {
+        pythagoras =((this.x * this.x) + (this.y * this.y) + (this.z * this.z))
+        return new Vec3( 1 / (Math.sqrt(pythagoras)))
+    }
 }
 const v1 = new Vec3(1, 2, 3);
 const v2 = new Vec3(4, 5, 6);
