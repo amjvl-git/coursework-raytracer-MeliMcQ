@@ -38,34 +38,45 @@ class Vec3
 
     // Scale this vector by the number scalar and return the result
     scale(scalar){
-        return new Vec3(this.x * scalar, this.y * sclalar, this.z * scalar)
+        return new Vec3(this.x * scalar, this.y * scalar, this.z * scalar)
     }
     
     // Calculate the dot product of this vector with the other and return the result
     dot(other) {
-
+        return ((this.x * other.x) + (this.y * other.y) + (this.z * other.z));
     }
 
     // Calculate and return the magnitude of this vector
     magnitude() {
-        pythagoras =((this.x * this.x) + (this.y * this.y) + (this.z * this.z))
-        return new Vec3(Math.sqrt(pythagoras))
+        let pythagoras =((this.x * this.x) + (this.y * this.y) + (this.z * this.z))
+        return (Math.sqrt(pythagoras))
     }
     
     // Calculate and return the magnitude of this vector without the square root
     magnitudeSquared() {
-        pythagoras =((this.x*this.x) + (this.y * this.y) + (this.z * this.z))
-        return new Vec3(pythagoras)
+        let pythagoras =((this.x * this.x) + (this.y * this.y) + (this.z * this.z))
+        return (pythagoras)
     }
 
     // Return a normalised version of this vector
     normalised() {
-        pythagoras =((this.x * this.x) + (this.y * this.y) + (this.z * this.z))
-        return new Vec3( 1 / (Math.sqrt(pythagoras)))
+        let mag = this.magnitude()
+        return new Vec3(this.x / mag, this.y / mag, this.z / mag)
     }
 }
+const v0 = new Vec3(0, 0, 0);
 const v1 = new Vec3(1, 2, 3);
 const v2 = new Vec3(4, 5, 6);
+
+console.log(v1.add(v2))
+console.log(v1.minus(v2))
+console.log(v1.multiply(v2))
+console.log(v1.scale(2))
+console.log(v1.dot(v2))
+console.log(v1.magnitude())
+console.log(v1.magnitudeSquared())
+console.log(v1.normalised())
+
 
 // A sphere in 3D space. Has centre, radius and colour all of which are Vec3s
 class Sphere
@@ -94,8 +105,17 @@ class Ray
     }
 
     // Calculate and return the point in space (a Vec3) for this ray for the given value of t
-    pointAt(t) {}
+    pointAt(t) {
+        let px = this.origin.x + (this.direction.x * t);
+        let py = this.origin.y + (this.direction.y * t);
+        let pz = this.origin.z + (this.direction.z * t);
+        return new Vec3(px, py, pz);
+    }
 }
+
+const r1 = new Ray(v0, v1);
+
+console.log(r1.pointAt(0.1));
 
 // The result of casting a ray into our scene
 // Position is the point where the ray intersects a sphere in the scene
@@ -131,7 +151,10 @@ function traceRay(ray)
 // Calculate and return the background colour based on the ray
 function backgroundColour(ray)
 {
-        return new Vec3(0.3,0.5,0.9) // Blue
+        let white = new Vec3(1, 1, 1)
+        let blue = new Vec3(0.3, 0.5, 0.9)
+        t = 0.5 * (ray.direction.y + 1.0)
+        return white.scale(1 - t).add(blue.scale(t))
 }
 
 // Returns the colour the ray should have as a Vec3 with RGB values in [0,1]
@@ -161,14 +184,28 @@ const spheres = new Array(
 // Main code
 let imageWidth = document.getElementById("canvas").width
 let imageHeight = document.getElementById("canvas").height
-let aspectRatio = document.getElementById("canvas").height / document.getElementById("canvas").width
+let aspectRatio = imageHeight / imageWidth
 
-let colour = new Vec3(0,0,0)
+let viewportWidth = 2
+let viewportHeight = viewportWidth * aspectRatio
+let focalLength = 1.0
+
+let camPosition = new Vec3(0, 0, 0)
+let horizontal = new Vec3(viewportWidth, 0, 0)
+let vertical = new Vec3(0, viewportHeight, 0)
+let lowerLeftCorner = camPosition.minus(horizontal.scale(0.5)).minus(vertical.scale(0.5)).minus(new Vec3(0, 0, focalLength))
+
+let colour = new Vec3(0, 0, 0)
 
 for (let i = 0; i < imageWidth; i++)
 {
     for (let j = 0; j <= imageHeight; j++)
     {
+        let u = i / (imageWidth-1)
+        let v = j / (imageHeight-1)
+
+        let ray = new Ray(camPosition, lowerLeftCorner.add(horizontal.scale(u)).add(vertical.scale(v)).minus(camPosition))
+        colour = rayColour(ray).scale(255)
         setPixel(i,j,colour)
     }
 }
