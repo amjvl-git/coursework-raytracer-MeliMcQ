@@ -157,7 +157,8 @@ class RayCastResult
 function hit(ray, t, sphereIndex)
 {
     let intersectionPoint = ray.pointAt(Sphere.rayIntersects)
-    let intersectionNormal = intersectionPoint.normal 
+    let intersectionMag = Math.sqrt((intersectionPoint.x ** 2) + (intersectionPoint.y ** 2) + (intersectionPoint ** 2));
+    let intersectionNormal = new Vec3((intersectionPoint.x / intersectionMag), (intersectionPoint.y / intersectionMag), (intersectionPoint.z / intersectionMag));
 
     return new RayCastResult(intersectionPoint, intersectionNormal, t, sphereIndex)
 
