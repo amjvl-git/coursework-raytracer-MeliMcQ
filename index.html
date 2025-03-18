@@ -94,19 +94,20 @@ class Sphere
     // If no solutions exist return -1
     rayIntersects(ray)  {
     
-    let a = ray.direction.dot(ray.direction);
-    let b = (ray.direction.scale(2)).dot((ray.origin - this.centre));
-    let c = ((ray.origin.minus(this.centre)).dot((ray.origin.minus(this.centre)))) - ((this.radius)**2);
-    
-     let discriminate = ((b)**2) - (4 * (a * c));   
+        let a = ray.direction.dot(ray.direction);
+        let b = (ray.direction.scale(2)).dot((ray.origin.minus(this.centre)));
+        let c = ((ray.origin.minus(this.centre)).dot((ray.origin.minus(this.centre)))) - ((this.radius)**2);
+        
+        let discriminate = (b ** 2) - (4 * (a * c));   
 
-     let t_quadr = ((b * -1) - ((Math.sqrt(discriminate)))) / (2 * a);
+        let t_quadr = ((b * -1) - ((Math.sqrt(discriminate)))) / (2 * a);
 
-    if (discriminate > 0) {
-        return ray.pointAt(t_quadr)
-    } else {
-        return -1;
-    }
+
+        if (discriminate > 0) {
+            return ray.pointAt(t_quadr)
+        } else {
+            return -1;
+        }
 
     }
     
@@ -158,7 +159,7 @@ function hit(ray, t, sphereIndex)
     let intersectionPoint = ray.pointAt(Sphere.rayIntersects)
     let intersectionNormal = intersectionPoint.normal 
 
-    return new rayCastResult(intersectionPoint, intersectionNormal, t, sphereIndex)
+    return new RayCastResult(intersectionPoint, intersectionNormal, t, sphereIndex)
 
 }
 
@@ -191,7 +192,7 @@ function rayColour(ray)
 {
     let castResult = traceRay(ray)
     if(castResult.t < 0) return backgroundColour(ray)
-    return new Vec3(1,0,0) // Red
+    return castResult.normal
 }
 
 // Sets a pixel at (x, y) in the canvas with an RGB Vec3
