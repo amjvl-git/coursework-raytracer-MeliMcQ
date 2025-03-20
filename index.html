@@ -220,7 +220,7 @@ function rayColour(ray)
     let p = intersectionPoint
     let n_cap = intersectionNormal
     let c = camPosition
-    let m = 4
+    let m = 2
 
     let r_cap = Math.abs(i.minus(n_cap).scale(2).multiply(n_cap).dot(i));
     let v_capX = Math.abs(c.x - p.x);
@@ -229,13 +229,14 @@ function rayColour(ray)
     let v_cap = new Vec3(v_capX, v_capY, v_capZ);
     let v_r = (v_capX * r_cap) + (v_capY * r_cap) + (v_capZ * r_cap)
     let specLight = Math.max(v_r, 0) ** m
+    let specScalar = specLight * 0.8
 
     console.log(specLight)
     
     let ambScalar = 0.05
     let albedo = spheres[castResult.sphereIndex].colour
     let diffuse = Math.max(castResult.normal.dot(negLightDirection),0);
-    let colour = albedo.scale(ambScalar + diffuse + specLight);
+    let colour = albedo.scale(ambScalar + diffuse + specScalar);
     
     return colour
 }
