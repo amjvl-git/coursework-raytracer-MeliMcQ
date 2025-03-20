@@ -69,14 +69,14 @@ const v0 = new Vec3(0, 0, 0);
 const v1 = new Vec3(1, 2, 3);
 const v2 = new Vec3(4, 5, 6);
 
-console.log(v1.add(v2))
-console.log(v1.minus(v2))
-console.log(v1.multiply(v2))
-console.log(v1.scale(2))
-console.log(v1.dot(v2))
-console.log(v1.magnitude())
-console.log(v1.magnitudeSquared())
-console.log(v1.normalised())
+// console.log(v1.add(v2))
+// console.log(v1.minus(v2))
+// console.log(v1.multiply(v2))
+// console.log(v1.scale(2))
+// console.log(v1.dot(v2))
+// console.log(v1.magnitude())
+// console.log(v1.magnitudeSquared())
+// console.log(v1.normalised())
 
 
 // A sphere in 3D space. Has centre, radius and colour all of which are Vec3s
@@ -160,6 +160,7 @@ class RayCastResult
 // Calculate the intersection point and normal when a ray hits a sphere. Returns a RayCastResult.
 function hit(ray, t, sphereIndex)
 {
+
     let sphere = spheres[sphereIndex];
     let intersectionPoint = ray.pointAt(t)
     let intersectionNormal = intersectionPoint.minus(sphere.centre).normalised();
@@ -210,10 +211,31 @@ function rayColour(ray)
 {
     let castResult = traceRay(ray)
     if(castResult.t < 0) return backgroundColour(ray)
+
+    let sphere = spheres[castResult.sphereIndex];
+    let intersectionPoint = ray.pointAt(castResult.sphereIndex)
+    let intersectionNormal = intersectionPoint.minus(sphere.centre).normalised();
+
+    let i = lightDirection
+    let p = intersectionPoint
+    let n_cap = intersectionNormal
+    let c = camPosition
+    let m = 4
+
+    let r_cap = Math.abs(i.minus(n_cap).scale(2).multiply(n_cap).dot(i));
+    let v_capX = Math.abs(c.x - p.x);
+    let v_capY = Math.abs(c.y - p.y);
+    let v_capZ = Math.abs(c.z - p.z);
+    let v_cap = new Vec3(v_capX, v_capY, v_capZ);
+    let v_r = (v_capX * r_cap) + (v_capY * r_cap) + (v_capZ * r_cap)
+    let specLight = Math.max(v_r, 0) ** m
+
+    console.log(specLight)
     
+    let ambScalar = 0.05
     let albedo = spheres[castResult.sphereIndex].colour
     let diffuse = Math.max(castResult.normal.dot(negLightDirection),0);
-    let colour = albedo.scale(diffuse);
+    let colour = albedo.scale(ambScalar + diffuse + specLight);
     
     return colour
 }
