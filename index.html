@@ -304,17 +304,24 @@ let colour = new Vec3(0, 0, 0)
 let lightDirection = new Vec3(-1.1, -1.3, -1.5).normalised();
 let negLightDirection = new Vec3(-lightDirection.x, -lightDirection.y, -lightDirection.z);
 
+let sampleMulti = 50;
 
 for (let i = 0; i < imageWidth; i++)
 {
     for (let j = 0; j <= imageHeight; j++)
     {
-        let u = i / (imageWidth-1)
-        let v = j / (imageHeight-1)
-
-        let ray = new Ray(camPosition, lowerLeftCorner.add(horizontal.scale(u)).add(vertical.scale(v)).minus(camPosition))
-        colour = rayColour(ray).scale(255)
-        setPixel(i,j,colour)
+        let colour = new Vec3(0, 0, 0);
+        for (let s = 0; s < sampleMulti; s++){
+            let u = (i + Math.random()) / (imageWidth - 1);
+            let v = (j + Math.random()) / (imageHeight - 1);
+        
+            let ray = new Ray(camPosition, lowerLeftCorner.add(horizontal.scale(u)).add(vertical.scale(v)).minus(camPosition));
+            colour = colour.add(rayColour(ray));
+        }
+        
+        colour = colour.scale(255 / sampleMulti);
+        //colour = rayColour(ray).scale(255)
+        setPixel(i, j, colour);
     }
 }
 
