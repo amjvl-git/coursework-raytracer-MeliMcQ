@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html>
+
+<body>
+
+<canvas id="canvas" width="400" height="300" style="border:1px solid#000000;">
+Your browser does not support the HTML canvas tag.
+</canvas>
+<div>
+    <p>
+        LightSource X: <input type="range" min="0" max="40" value="13" id="LSX"><span id="LSXDisplay"></span>
+    </p>
+    <p>
+        LightSource Y: <input type="range" min="0" max="40" value="15" id="LSY"><span id="LSYDisplay"></span>
+    </p>
+    <p>
+        LightSource Z: <input type="range" min="0" max="40" value="17" id="LSZ"><span id="LSZDisplay"></span>
+    </p>
+
+ </div>
+<script>
+
+
+// Simple vector in 3D with numbers for x, y and z
+class Vec3
+{
+    constructor (x, y, z)
+    {
+        this.x = x
+        this.y = y
+        this.z = z
+    }
+
+    // Add other vector to this one and return the result
+    add(other)
+    {
+        return new Vec3(this.x + other.x, this.y + other.y, this.z + other.z)
+    }
+
+    // Subtract other vector from this one and return the result
+    minus(other){
+        return new Vec3(this.x - other.x, this.y - other.y, this.z - other.z)
+    }
+
+    // Multiply other vector by this one and return the result
+    multiply(other){
+        return new Vec3(this.x * other.x, this.y * other.y, this.z * other.z)
+    }
+
+    // Scale this vector by the number scalar and return the result
+    scale(scalar){
+        return new Vec3(this.x * scalar, this.y * scalar, this.z * scalar)
+    }
+    
+    // Calculate the dot product of this vector with the other and return the result
+    dot(other) {
+        return ((this.x * other.x) + (this.y * other.y) + (this.z * other.z));
+    }
+
+    // Calculate and return the magnitude of this vector
+    magnitude() {
+        let pythagoras =((this.x * this.x) + (this.y * this.y) + (this.z * this.z))
+        return (Math.sqrt(pythagoras))
+    }
+    
+    // Calculate and return the magnitude of this vector without the square root
+    magnitudeSquared() {
+        let pythagoras =((this.x * this.x) + (this.y * this.y) + (this.z * this.z))
+        return (pythagoras)
+    }
+
+    // Return a normalised version of this vector
+    normalised() {
+        let mag = this.magnitude()
+        if (mag === 0) return new Vec3(0, 0, 0);
+        return new Vec3(this.x / mag, this.y / mag, this.z / mag);
+    }
+}
+const v0 = new Vec3(0, 0, 0);
+const v1 = new Vec3(1, 2, 3);
+const v2 = new Vec3(4, 5, 6);
+
+// console.log(v1.add(v2))
+// console.log(v1.minus(v2))
+// console.log(v1.multiply(v2))
+// console.log(v1.scale(2))
+// console.log(v1.dot(v2))
+// console.log(v1.magnitude())
+// console.log(v1.magnitudeSquared())
+// console.log(v1.normalised())
+
+
+// A sphere in 3D space. Has centre, radius and colour all of which are Vec3s
+class Sphere
+{
+    constructor (centre, radius, colour)
+    {
+        this.centre = centre
+        this.radius = radius
+        this.colour = colour
+    }
+
+    // Calculate the point on the sphere  where the ray intersects using 
+    // a quadratic equation and return the t value of the ray for that point
+    // If two solutions exist return the minus solution
+    // If no solutions exist return -1
+    rayIntersects(ray)  {
+
+        let o = ray.origin;
+        let d = ray.direction;
+    
+        let a = d.dot(d);
+        let b = d.scale(2).dot(o.minus(this.centre));
+        let c = o.minus(this.centre).dot(o.minus(this.centre)) - (this.radius**2);
+        
+        let discriminate = (b ** 2) - (4 * (a * c));   
+
+        let t_quadr = ((b * -1) - (Math.sqrt(discriminate))) / (2 * a);
+
+
+        if (discriminate > 0) {
+            return t_quadr;
+        } else {
+            return -1;
+        }
+
+    }
+    
+}
+
+
+
+// Ray which has an origin and direction, both are Vec3s
+class Ray
+{
+    constructor (origin, direction)
+    {
+        this.origin = origin
+        this.direction = direction
+    }
+
+    // Calculate and return the point in space (a Vec3) for this ray for the given value of t
+    pointAt(t) {
+        let px = this.origin.x + (this.direction.x * t);
+        let py = this.origin.y + (this.direction.y * t);
+        let pz = this.origin.z + (this.direction.z * t);
+        return new Vec3(px, py, pz);
+    }
+}
+
+//const r1 = new Ray(v0, v1);
+
+//console.log(r1.pointAt(0.1));
+
+// The result of casting a ray into our scene
+// Position is the point where the ray intersects a sphere in the scene
+// Normal is the normal unit vector of the sphere at the intersection point
+// t is the t value along the ray where the intersection point is.  This value should, be -1 when the ray hits nothing
+// SphereIndex is the array index of the sphere hit by the ray
+class RayCastResult
+{
+    constructor(position, normal, t, sphereIndex)
+    {
+        this.position = position
+        this.normal = normal
+        this.t = t
+        this.sphereIndex = sphereIndex
+    }
+}
+
+// Calculate the intersection point and normal when a ray hits a sphere. Returns a RayCastResult.
+function hit(ray, t, sphereIndex)
+{
+
+    let sphere = spheres[sphereIndex];
+    let intersectionPoint = ray.pointAt(t)
+    let intersectionNormal = intersectionPoint.minus(sphere.centre).normalised();
+
+    return new RayCastResult(intersectionPoint, intersectionNormal, t, sphereIndex)
+
+}
+
+// Return a RayCastResult when a ray misses everything in the scene
+function miss()
+{
+    return new RayCastResult(new Vec3(0,0,0), new Vec3(0,0,0), -1, -1)
+}
+
+// Check whether a ray hits anything in the scene and return a RayCast Result
+function traceRay(ray)
+{
+    let t = 1000000;
+    let closestSphereIndex = -1;
+
+    for (let i = 0; i < spheres.length; i++)
+    {
+        let current_t = spheres[i].rayIntersects(ray)
+        if(current_t > 0 && current_t < t)
+        {
+            t = current_t;
+            closestSphereIndex = i
+        }
+    }
+
+    if(closestSphereIndex < 0) return miss()
+
+    return hit(ray, t, closestSphereIndex)
+
+}
+
+// Calculate and return the background colour based on the ray
+function backgroundColour(ray)
+{
+        let white = new Vec3(1, 1, 1)
+        let blue = new Vec3(0.3, 0.5, 0.9)
+        t = 0.5 * (ray.direction.y + 1.0)
+        return white.scale(1 - t).add(blue.scale(t))
+}
+
+// Returns the colour the ray should have as a Vec3 with RGB values in [0,1]
+
+function rayColour(ray) 
+{
+    let castResult = traceRay(ray)
+    if(castResult.t < 0) return backgroundColour(ray)
+
+    let sphere = spheres[castResult.sphereIndex];
+    let intersectionPoint = ray.pointAt(castResult.t)
+    let intersectionNormal = intersectionPoint.minus(sphere.centre).normalised();
+
+    let i = lightDirection
+    let p = intersectionPoint
+    let n_cap = intersectionNormal
+    let c = camPosition
+    let m = 2.2
+    let iNeg = negLightDirection
+
+    let r_cap = Math.abs(i.minus(n_cap).scale(2).multiply(n_cap).dot(i));
+    let v_capX = Math.abs(c.x - p.x);
+    let v_capY = Math.abs(c.y - p.y);
+    let v_capZ = Math.abs(c.z - p.z);
+    let v_cap = new Vec3(v_capX, v_capY, v_capZ);
+    let v_r = (v_capX * r_cap) + (v_capY * r_cap) + (v_capZ * r_cap)
+    let specLight = Math.max(v_r, 0) ** m
+    let specScalar = specLight * 0.00030
+
+    let shadowRayO = castResult.position.add(castResult.normal.scale(0.001));
+    let shadowRay = new Ray(shadowRayO, negLightDirection);
+
+    let isShadow = false;
+    for (let k = 0; k < spheres.length; k++)
+    {
+        if(k !== castResult.sphereIndex && spheres[k].rayIntersects(shadowRay) > 0){
+            isShadow = true;
+            break;
+        }
+    }
+
+    //console.log(specLight)
+    let diffuse = isShadow ? 0: Math.max(castResult.normal.dot(negLightDirection),0);
+    let ambScalar = 0.05
+    let albedo = spheres[castResult.sphereIndex].colour
+    //let diffuse = Math.max(castResult.normal.dot(negLightDirection),0);
+    let colour = albedo.scale(ambScalar + diffuse + specScalar);
+    
+    return colour
+}
+
+function gammaCorr(colour, gamma)
+{
+    return new Vec3(
+        Math.pow(colour.x / 255, 1 / gamma) * 255,
+        Math.pow(colour.y / 255, 1 / gamma) * 255,
+        Math.pow(colour.z / 255, 1 / gamma) * 255
+    );
+}
+
+// Sets a pixel at (x, y) in the canvas with an RGB Vec3
+function setPixel(x, y, colour)
+{
+    let gamma = 2.2;
+    let corrColour = gammaCorr(colour, gamma);
+ 
+    //console.log("col", corrColour)
+
+    var c = document.getElementById("canvas")
+    var ctx = c.getContext("2d")
+    ctx.fillStyle = "rgba("+corrColour.x+","+corrColour.y+","+corrColour.z+","+1+")"
+    ctx.fillRect(x, c.height - y, 1, 1)
+}
+
+const spheres = new Array(
+    new Sphere(new Vec3(0,0,-1), 0.3, new Vec3(1,0,0)),       // Red sphere
+    new Sphere(new Vec3(0,0.2,-0.8), 0.15, new Vec3(0,0,1)),  // Blue sphere
+    new Sphere(new Vec3(0,-100.5,-1), 100, new Vec3(0,1,0))   // Big green sphere
+    );
+
+function SlideX(){
+    document.getElementById("LSX").addEventListener('change', function(event){
+        var LSXValue = event.target.value;
+        var minValue = 0;
+        var coef = 1
+        var calc;
+        calc = minValue + (LSXValue * coef);
+        LSXout.value = calc;
+        let lightX = (LSXout.value / 10 - 0.2) * -1
+        console.log("x",lightX)
+        return lightX
+})}
+
+function SlideY(){
+    document.getElementById("LSY").addEventListener('change', function(event){
+        var LSYValue = event.target.value;
+        var minValue = 0;
+        var coef = 1
+        var calc;
+        calc = minValue + (LSYValue * coef);
+        LSYout.value = calc;
+        let lightY = (LSYout.value / 10 - 0.2) * -1
+        console.log("y",lightY)
+        return lightY
+})}
+
+function SlideZ(){
+    document.getElementById("LSZ").addEventListener('change', function(event){
+        var LSZValue = event.target.value;
+        var minValue = 0;
+        var coef = 1
+        var calc;
+        calc = minValue + (LSZValue * coef);
+        LSZout.value = calc;
+        let lightZ = (LSZout.value / 10 - 0.2) * -1
+        console.log("z",lightZ)
+        return lightZ
+})}
+// Main code
+
+var c = document.getElementById("canvas")
+    var ctx = c.getContext("2d")
+
+var LSX = document.getElementById("LSX").value;
+var LSXout = document.getElementById("LSX");
+
+var LSY = document.getElementById("LSY").value;
+var LSYout = document.getElementById("LSY");
+
+var LSZ = document.getElementById("LSZ").value;
+var LSZout = document.getElementById("LSZ");
+
+LSXout.innerHTML = LSX.value
+LSYout.innerHTML = LSY.value
+LSZout.innerHTML = LSZ.value
+
+
+LSX.oninput = function(){
+    LSXout.innerHTML = this.value;
+}
+LSY.oninput = function(){
+    LSYout.innerHTML = this.value;
+}
+LSZ.oninput = function(){
+    LSZout.innerHTML = this.value;
+}
+
+let imageWidth = document.getElementById("canvas").width
+let imageHeight = document.getElementById("canvas").height
+let aspectRatio = imageHeight / imageWidth
+
+let viewportWidth = 2
+let viewportHeight = viewportWidth * aspectRatio
+let focalLength = 1.0
+
+let camPosition = new Vec3(0, 0, 0)
+let horizontal = new Vec3(viewportWidth, 0, 0)
+let vertical = new Vec3(0, viewportHeight, 0)
+let lowerLeftCorner = camPosition.minus(horizontal.scale(0.5)).minus(vertical.scale(0.5)).minus(new Vec3(0, 0, focalLength))
+
+let colour = new Vec3(0, 0, 0)
+
+//let lightDirection = new Vec3((LSX.onchange = SlideX()), (LSY.onchange = SlideY()), (LSZ.onchange = SlideZ())).normalised();
+let lightDirection = new Vec3(-1.1, -1.3, -1.5).normalised();
+let negLightDirection = new Vec3(-lightDirection.x, -lightDirection.y, -lightDirection.z);
+
+let sampleMulti = 50;
+let p 
+
+function frame(ts){
+
+    const elapsed = ts - p || 0;
+    p = ts;
+    console.log(elapsed);
+
+    const fps = 1 / (elapsed / 1000);
+
+    let lightDirection = new Vec3((LSX.onchange = SlideX()), (LSY.onchange = SlideY()), (LSZ.onchange = SlideZ())).normalised();
+
+    ctx.save();
+
+    for (let i = 0; i < imageWidth; i++)
+    {
+        for (let j = 0; j <= imageHeight; j++)
+        {
+            let colour = new Vec3(0, 0, 0);
+            for (let s = 0; s < sampleMulti; s++){
+                let u = (i + Math.random()) / (imageWidth - 1);
+                let v = (j + Math.random()) / (imageHeight - 1);
+            
+                let ray = new Ray(camPosition, lowerLeftCorner.add(horizontal.scale(u)).add(vertical.scale(v)).minus(camPosition));
+
+                colour = colour.add(rayColour(ray));
+                
+            }
+            
+
+            colour = colour.scale(255 / sampleMulti);
+            //colour = rayColour(ray).scale(255)
+            setPixel(i, j, colour);
+        }
+    }
+    
+    ctx.restore();
+
+    requestAnimationFrame(frame)
+    return lightDirection
+}
+
+requestAnimationFrame(frame)
+
+</script>
+
+</body>
+</html>
