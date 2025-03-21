@@ -214,14 +214,14 @@ function rayColour(ray)
     if(castResult.t < 0) return backgroundColour(ray)
 
     let sphere = spheres[castResult.sphereIndex];
-    let intersectionPoint = ray.pointAt(castResult.sphereIndex)
+    let intersectionPoint = ray.pointAt(castResult.t)
     let intersectionNormal = intersectionPoint.minus(sphere.centre).normalised();
 
     let i = lightDirection
     let p = intersectionPoint
     let n_cap = intersectionNormal
     let c = camPosition
-    let m = 3
+    let m = 2.2
     let iNeg = negLightDirection
 
     let r_cap = Math.abs(i.minus(n_cap).scale(2).multiply(n_cap).dot(i));
@@ -233,30 +233,25 @@ function rayColour(ray)
     let specLight = Math.max(v_r, 0) ** m
     let specScalar = specLight * 0.00030
 
+    let shadowRayO = castResult.position.add(castResult.normal.scale(0.001));
+    let shadowRay = new Ray(shadowRayO, negLightDirection);
 
-    let r_capNeg = Math.abs(iNeg.minus(n_cap).scale(2).multiply(n_cap).dot(iNeg));
-    let v_rNeg = (v_capX * r_capNeg) + (v_capY * r_capNeg) + (v_capZ * r_capNeg)
-    let shadow = Math.max(v_rNeg, 0) ** m
+    let isShadow = false;
+    for (let k = 0; k < spheres.length; k++)
+    {
+        if(k !== castResult.sphereIndex && spheres[k].rayIntersects(shadowRay) > 0){
+            isShadow = true;
+            break;
+        }
+    }
 
-
-    console.log(specLight)
-    
+    //console.log(specLight)
+    let diffuse = isShadow ? 0: Math.max(castResult.normal.dot(negLightDirection),0);
     let ambScalar = 0.05
     let albedo = spheres[castResult.sphereIndex].colour
-    let diffuse = 0
-    //let colour = albedo.scale(ambScalar + diffuse + specScalar);
+    //let diffuse = Math.max(castResult.normal.dot(negLightDirection),0);
+    let colour = albedo.scale(ambScalar + diffuse + specScalar);
     
-    let shadowOrigin = castResult.position.add(castResult.normal.scale(0.001));
-    let shadowRay = new Ray(shadowOrigin, negLightDirection);
-    let shadowResult = traceRay(shadowRay);
-
-    if (shadowResult.t <0) 
-    {
-        diffuse = Math.max(castResult.normal.dot(negLightDirection),0);
-        let viewDir = new Vec3(ray.direction.x, ray.direction.y, ray.direction.z);
-        specScalar = specLight * 0.0003
-    }
-    let colour = albedo.scale(diffuse).add(new Vec3(1, 1, 1).scale(specScalar));
     return colour
 }
 
@@ -275,6 +270,8 @@ function setPixel(x, y, colour)
     let gamma = 2.2;
     let corrColour = gammaCorr(colour, gamma);
  
+    //console.log("col", corrColour)
+
     var c = document.getElementById("canvas")
     var ctx = c.getContext("2d")
     ctx.fillStyle = "rgba("+corrColour.x+","+corrColour.y+","+corrColour.z+","+1+")"
